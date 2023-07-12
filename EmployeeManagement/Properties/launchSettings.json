@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EmployeeManagement": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DefaultConnection": "Data Source=(localdb)\\\\MSSQLLocalDB;Initial Catalog=EmployeeDB;Integrated Security=True;MultipleActiveResultSets=True"
+      }
+    }
+  }
+}
