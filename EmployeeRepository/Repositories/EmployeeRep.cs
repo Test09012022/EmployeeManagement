@@ -22,7 +22,7 @@ namespace EmployeeRepository.Repositories
         {
             entity.StartDate = DateTime.Now;
             var sql = "Insert into EMPLOYEES (FirstName,Surname,Email,StartDate,JobTitle) VALUES (@FirstName,@Surname,@Email,@StartDate,@JobTitle)";
-            using (var connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection")))
+            using (var connection = new SqlConnection(Environment.GetEnvironmentVariable("DefaultConnection")))
             {
                 connection.Open();
                 var result = await connection.ExecuteAsync(sql, entity);
@@ -32,8 +32,8 @@ namespace EmployeeRepository.Repositories
 
         public async Task<int> DeleteAsync(int id)
         {
-            var sql = "DELETE FROM Employees WHERE Id = @Id";
-            using (var connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection")))
+            var sql = "DELETE FROM Employees WHERE EmployeeId = @Id";
+            using (var connection = new SqlConnection(Environment.GetEnvironmentVariable("DefaultConnection")))
             {
                 connection.Open();
                 var result = await connection.ExecuteAsync(sql, new { Id = id });
@@ -43,19 +43,30 @@ namespace EmployeeRepository.Repositories
 
         public async Task<IReadOnlyList<Employee>> GetAllAsync()
         {
+
+            string connectionString = "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=EmployeeDB;Integrated Security=True;MultipleActiveResultSets=True";
+                                      
+
             var sql = "SELECT * FROM Employees";
-            using (var connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection")))
+            try {
+                using (var connection = new SqlConnection(Environment.GetEnvironmentVariable("DefaultConnection")))
+                {
+                    connection.Open();
+                    var result = await connection.QueryAsync<Employee>(sql);
+                    return result.ToList();
+                }
+
+            }
+            catch (Exception ex)
             {
-                connection.Open();
-                var result = await connection.QueryAsync<Employee>(sql);
-                return result.ToList();
+                return null;
             }
         }
 
         public async Task<Employee> GetByIdAsync(int id)
         {
-            var sql = "SELECT * FROM Employees WHERE Id = @Id";
-            using (var connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection")))
+            var sql = "SELECT * FROM Employees WHERE EmployeeId = @Id";
+            using (var connection = new SqlConnection(Environment.GetEnvironmentVariable("DefaultConnection")))
             {
                 connection.Open();
                 var result = await connection.QuerySingleOrDefaultAsync<Employee>(sql, new { Id = id });
@@ -65,8 +76,8 @@ namespace EmployeeRepository.Repositories
 
         public async Task<int> UpdateAsync(Employee entity)
         {
-            var sql = "UPDATE Employees SET FirstName = @FirstName, Surname = @Surname, Email = @Email, StartDate = @StartDate, JobTitle = @JobTitle, EndDate = @EndDate  WHERE Id = @Id";
-            using (var connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection")))
+            var sql = "UPDATE Employees SET FirstName = @FirstName, Surname = @Surname, Email = @Email, StartDate = @StartDate, JobTitle = @JobTitle, EndDate = @EndDate  WHERE EmployeeId = @Id";
+            using (var connection = new SqlConnection(Environment.GetEnvironmentVariable("DefaultConnection")))
             {
                 connection.Open();
                 var result = await connection.ExecuteAsync(sql, entity);

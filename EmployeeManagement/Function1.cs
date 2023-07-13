@@ -13,32 +13,9 @@ using EmployeeApplication.Interfaces;
 
 namespace EmployeeManagement
 {
-    public  class Function1
+    public class Function1
     {
-        //[FunctionName("Function1")]
-        //public static async Task<IActionResult> Run(
-        //    [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-        //    ILogger log)
-        //{
-        //    log.LogInformation("C# HTTP trigger function processed a request.");
-
-        //    string name = req.Query["name"];
-
-        //    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        //    dynamic data = JsonConvert.DeserializeObject(requestBody);
-        //    name = name ?? data?.name;
-
-        //    string responseMessage = string.IsNullOrEmpty(name)
-        //        ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-        //        : $"Hello, {name}. This HTTP triggered function executed successfully.";
-
-        //    return new OkObjectResult(responseMessage);
-        //}
-
-
-
-        //------------------------
-
+     
         private readonly IUnitOfWork unitOfWork;
         private const string Route = "func";
         #region Constructor
@@ -62,8 +39,9 @@ namespace EmployeeManagement
         {
             try
             {
+
+                var value = Environment.GetEnvironmentVariable("DefaultConnection");
                 log.LogInformation("Getting Employee list items");
-                unitOfWork.Employees.GetAllAsync();
                 return new OkObjectResult(await unitOfWork.Employees.GetAllAsync());
 
             }
@@ -98,8 +76,9 @@ namespace EmployeeManagement
                 }
                 return new OkObjectResult(result);
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
+                log.LogError("Exception is : " + ex.Message);
                 throw;
             }
         }
@@ -120,9 +99,17 @@ namespace EmployeeManagement
             log.LogInformation("Creating a new employee list item");
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var input = JsonConvert.DeserializeObject<Employee>(requestBody);
-            var employee = new Employee { FirstName = input.FirstName, Surname = input.Surname, Email = input.Email, JobTitle = input.JobTitle};
-            await unitOfWork.Employees.AddAsync(employee);
-            return new OkObjectResult(new { Message = "Record Saved SuccessFully", Data = employee });
+            var employee = new Employee { FirstName = input.FirstName, Surname = input.Surname, Email = input.Email, JobTitle = input.JobTitle };
+            try
+            {
+                await unitOfWork.Employees.AddAsync(employee);
+                return new OkObjectResult(new { Message = "Record Saved SuccessFully", Data = employee });
+            }
+            catch (Exception ex)
+            {
+                log.LogError("Exception is : " + ex.Message);
+                throw;
+            }
         }
         #endregion
 
@@ -143,15 +130,22 @@ namespace EmployeeManagement
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var updated = JsonConvert.DeserializeObject<Employee>(requestBody);
             var employee = await unitOfWork.Employees.GetByIdAsync(updated.EmployeeId);
-            if (employee is null)
+            try
             {
-                log.LogError($"Item {updated.EmployeeId} not found");
-                return new NotFoundResult();
+                if (employee is null)
+                {
+                    log.LogError($"Item {updated.EmployeeId} not found");
+                    return new NotFoundResult();
+                }
+                await unitOfWork.Employees.UpdateAsync(updated);
+                return new OkObjectResult(new { Message = "Record Updated SuccessFully", Data = employee });
             }
-         
            
-            await  unitOfWork.Employees.UpdateAsync(updated);
-            return new OkObjectResult(new { Message = "Record Updated SuccessFully", Data = employee });
+            catch (Exception ex)
+            {
+                log.LogError("Exception is : " + ex.Message);
+                throw;
+            }
         }
         #endregion
 
@@ -169,20 +163,31 @@ namespace EmployeeManagement
           HttpRequest req, ILogger log, int Id)
         {
             log.LogInformation("Updating a new employee list item");
-            var employee = await unitOfWork.Employees.GetByIdAsync(Id);
-            if (employee is null)
+            try
             {
-                log.LogError($"Item {Id} not found");
-                return new NotFoundResult();
+                var employee = await unitOfWork.Employees.GetByIdAsync(Id);
+
+                if (employee is null)
+                {
+                    log.LogError($"Item {Id} not found");
+                    return new NotFoundResult();
+                }
+                await unitOfWork.Employees.DeleteAsync(Id);
+
+                return new OkObjectResult("Record Deleted !");
             }
-            await unitOfWork.Employees.DeleteAsync(Id);
-          
-            return new OkObjectResult("Record Deleted !");
+            catch (Exception ex)
+            {
+                log.LogError("Exception is : " + ex.Message);
+                throw;
+            }
+
         }
-        #endregion
-
-
-
-
     }
+    #endregion
+
+
+
+
+
 }
